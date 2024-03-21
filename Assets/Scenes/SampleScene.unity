@@ -1043,11 +1043,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fc6af4ddb87ce5545a606ef779e66c30, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  objectToSpawn: {fileID: 8125993065099215665, guid: 79bac6820095fb04a83fd282a6e558ec, type: 3}
+  spawnablePrefabs:
+  - prefab: {fileID: 8125993065099215665, guid: 79bac6820095fb04a83fd282a6e558ec, type: 3}
+    offset: {x: -1, y: 1, z: 2}
+  - prefab: {fileID: 8125993065099215665, guid: a9fb514dde53c2549b7ad9a01f15411a, type: 3}
+    offset: {x: 1.5, y: 0.5, z: 2}
+  - prefab: {fileID: 8125993065099215665, guid: decdd77d9ee00e34eab40e48cfa5674c, type: 3}
+    offset: {x: 0.5, y: 1.5, z: 2}
   playerObject: {fileID: 10105224}
-  numberOfObjects: 6
-  radius: 2
-  spawnAngle: 90
 --- !u!1 &128513415
 GameObject:
   m_ObjectHideFlags: 0

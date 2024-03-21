@@ -1,12 +1,18 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 public class SpawnManagerScript : MonoBehaviour
 {
-    public GameObject objectToSpawn; // The prefab to spawn
+    [System.Serializable]
+    public class SpawnablePrefab
+    {
+        public GameObject prefab; // The prefab to spawn
+        public Vector3 offset = Vector3.zero; // Offset from the player's position on the floor
+    }
+
+    public List<SpawnablePrefab> spawnablePrefabs; // List of prefabs and their specified offsets
     public GameObject playerObject; // Reference to the player object
-    public int numberOfObjects = 5; // How many objects to spawn
-    public float radius = 5f; // Distance from the player at which to spawn objects
-    public float spawnAngle = 180f; // The angle of the arc for spawning objects, adjustable via Unity UI
+    private float playerHeightOffset = 1.15f; // Y offset to adjust for player's height above the floor
 
     void Start()
     {
@@ -15,22 +21,16 @@ public class SpawnManagerScript : MonoBehaviour
 
     void SpawnAroundPlayer()
     {
-        if (playerObject == null) return; // Safety check to ensure the player object is assigned
+        if (playerObject == null) return;
 
-        Vector3 playerForward = new Vector3(playerObject.transform.forward.x, 0, playerObject.transform.forward.z).normalized;
+        // Adjust the reference position to the floor level by subtracting the player's height offset
+        Vector3 floorPosition = playerObject.transform.position - new Vector3(0, playerHeightOffset, 0);
 
-        for (int i = 0; i < numberOfObjects; i++)
+        foreach (var spawnablePrefab in spawnablePrefabs)
         {
-            // Adjust angle calculation to use the spawnAngle variable
-            // Convert spawnAngle from degrees to radians for calculation
-            float angleRadians = Mathf.Deg2Rad * spawnAngle;
-            float angle = Mathf.Lerp(-angleRadians / 2, angleRadians / 2, (float)i / (numberOfObjects - 1));
-            Vector3 spawnDirection = new Vector3(Mathf.Sin(angle), 0, Mathf.Cos(angle));
-
-            Vector3 finalSpawnDirection = Quaternion.LookRotation(playerForward) * spawnDirection;
-            Vector3 position = playerObject.transform.position + finalSpawnDirection * radius;
-
-            Instantiate(objectToSpawn, position, Quaternion.identity);
+            // Calculate the spawn position using the provided offset from the floor position
+            Vector3 spawnPosition = floorPosition + spawnablePrefab.offset;
+            Instantiate(spawnablePrefab.prefab, spawnPosition, Quaternion.identity);
         }
     }
 }
