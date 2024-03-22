@@ -1045,11 +1045,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   spawnablePrefabs:
   - prefab: {fileID: 8125993065099215665, guid: 79bac6820095fb04a83fd282a6e558ec, type: 3}
-    offset: {x: -1, y: 1, z: 2}
-  - prefab: {fileID: 8125993065099215665, guid: a9fb514dde53c2549b7ad9a01f15411a, type: 3}
-    offset: {x: 1.5, y: 0.5, z: 2}
-  - prefab: {fileID: 8125993065099215665, guid: decdd77d9ee00e34eab40e48cfa5674c, type: 3}
-    offset: {x: 0.5, y: 1.5, z: 2}
+    name: Ant
   playerObject: {fileID: 10105224}
 --- !u!1 &128513415
 GameObject:
@@ -19799,7 +19795,7 @@ Light:
   m_BounceIntensity: 1
   m_ColorTemperature: 6570
   m_UseColorTemperature: 0
-  m_BoundingSphereOverride: {x: 0, y: 0, z: 6.56e-43, w: 0}
+  m_BoundingSphereOverride: {x: 0, y: 0, z: 0, w: 8e-44}
   m_UseBoundingSphereOverride: 0
   m_UseViewFrustumForShadowCasterCull: 1
   m_ShadowRadius: 0
