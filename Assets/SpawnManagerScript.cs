@@ -13,11 +13,9 @@ public class SpawnManagerScript : MonoBehaviour
 
     public List<SpawnablePrefab> spawnablePrefabs;
     public GameObject playerObject;
-    private float playerHeightOffset = 1.15f;
 
-    // Define the pointing space dimensions
-    private Vector3 pointingSpaceSize = new Vector3(91, 91, 46);
-    private float minDistance = 5f; // Minimum distance between targets
+    // Manually chosen positions
+    public List<Vector3> manualPositions;
 
     // Namesets
     private List<string[]> nameSets = new List<string[]>()
@@ -29,64 +27,29 @@ public class SpawnManagerScript : MonoBehaviour
 
     void Start()
     {
-        SpawnAroundPlayer();
+        SpawnAtManualPositions();
     }
 
-    void SpawnAroundPlayer()
+    void SpawnAtManualPositions()
     {
-        if (playerObject == null) return;
-
-        Vector3 floorPosition = playerObject.transform.position - new Vector3(0, playerHeightOffset, 0);
-
-        // Generate unique locations
-        List<Vector3> locations = GenerateUniqueLocations(4, pointingSpaceSize, minDistance, floorPosition);
+        if (playerObject == null || manualPositions == null || manualPositions.Count == 0) return;
 
         // Assign names to locations randomly from a randomly selected nameset
         string[] selectedNameSet = nameSets[Random.Range(0, nameSets.Count)];
         ShuffleArray(selectedNameSet); // Randomize names within the selected set
 
-        for (int i = 0; i < locations.Count; i++)
+        for (int i = 0; i < manualPositions.Count; i++)
         {
+            // Ensure we do not exceed the bounds of our prefab list or name set
+            if (i >= spawnablePrefabs.Count || i >= selectedNameSet.Length) break;
+
             SpawnablePrefab prefab = spawnablePrefabs.Find(p => p.name == selectedNameSet[i]);
             if (prefab != null)
             {
-                Instantiate(prefab.prefab, locations[i], Quaternion.identity);
+                // Instantiate at the manually set position
+                Instantiate(prefab.prefab, manualPositions[i], Quaternion.identity);
             }
         }
-    }
-
-    List<Vector3> GenerateUniqueLocations(int count, Vector3 size, float minDist, Vector3 basePosition)
-    {
-        List<Vector3> locations = new List<Vector3>();
-        int attempts = 0;
-
-        while (locations.Count < count && attempts < 1000)
-        {
-            Vector3 potentialLocation = new Vector3(
-                Random.Range(-size.x / 2, size.x / 2),
-                Random.Range(-size.y / 2, size.y / 2),
-                Random.Range(-size.z / 2, size.z / 2)
-            ) + basePosition;
-
-            bool tooClose = false;
-            foreach (var otherLocation in locations)
-            {
-                if (Vector3.Distance(potentialLocation, otherLocation) < minDist)
-                {
-                    tooClose = true;
-                    break;
-                }
-            }
-
-            if (!tooClose)
-            {
-                locations.Add(potentialLocation);
-            }
-
-            attempts++;
-        }
-
-        return locations;
     }
 
     void ShuffleArray<T>(T[] array)
