@@ -1,6 +1,5 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
+using System.Collections.Generic;
 
 public class SpawnManagerScript : MonoBehaviour
 {
@@ -13,11 +12,11 @@ public class SpawnManagerScript : MonoBehaviour
 
     public List<SpawnablePrefab> spawnablePrefabs;
     public GameObject playerObject;
+    public float boxDistanceInFrontOfPlayer = 1.0f; // 1 meter in front of the player
 
-    // Manually chosen positions
-    public List<Vector3> manualPositions;
+    private Vector3 boxSize = new Vector3(0.91f, 0.91f, 0.46f); // Size of the gizmo box in meters
+    private float minDistance = 0.05f; // Minimum distance in meters (5 cm)
 
-    // Namesets
     private List<string[]> nameSets = new List<string[]>()
     {
         new string[] {"Ant", "Bee", "Cat", "Dog"},
@@ -27,27 +26,58 @@ public class SpawnManagerScript : MonoBehaviour
 
     void Start()
     {
-        SpawnAtManualPositions();
+        List<Vector3> targetLocations = GenerateUniqueLocations(4, boxSize, minDistance);
+        AssignNamesAndSpawnPrefabs(targetLocations);
     }
 
-    void SpawnAtManualPositions()
+    List<Vector3> GenerateUniqueLocations(int count, Vector3 size, float minDist)
     {
-        if (playerObject == null || manualPositions == null || manualPositions.Count == 0) return;
+        List<Vector3> locations = new List<Vector3>();
+        int attempts = 0;
+        Vector3 boxCenter = playerObject.transform.position + playerObject.transform.forward * boxDistanceInFrontOfPlayer + new Vector3(0, size.y / 2, 0);
 
-        // Assign names to locations randomly from a randomly selected nameset
-        string[] selectedNameSet = nameSets[Random.Range(0, nameSets.Count)];
-        ShuffleArray(selectedNameSet); // Randomize names within the selected set
-
-        for (int i = 0; i < manualPositions.Count; i++)
+        while (locations.Count < count && attempts < 1000)
         {
-            // Ensure we do not exceed the bounds of our prefab list or name set
-            if (i >= spawnablePrefabs.Count || i >= selectedNameSet.Length) break;
+            Vector3 randomPoint = new Vector3(
+                Random.Range(-size.x / 2, size.x / 2),
+                Random.Range(-size.y / 2, size.y / 2),
+                Random.Range(-size.z / 2, size.z / 2)
+            );
 
+            Vector3 potentialLocation = boxCenter + randomPoint;
+            bool isValidLocation = true;
+
+            foreach (Vector3 otherLocation in locations)
+            {
+                if (Vector3.Distance(potentialLocation, otherLocation) < minDist)
+                {
+                    isValidLocation = false;
+                    break;
+                }
+            }
+
+            if (isValidLocation)
+            {
+                locations.Add(potentialLocation);
+            }
+
+            attempts++;
+        }
+
+        return locations;
+    }
+
+    void AssignNamesAndSpawnPrefabs(List<Vector3> locations)
+    {
+        string[] selectedNameSet = nameSets[Random.Range(0, nameSets.Count)];
+        ShuffleArray(selectedNameSet);
+
+        for (int i = 0; i < locations.Count; i++)
+        {
             SpawnablePrefab prefab = spawnablePrefabs.Find(p => p.name == selectedNameSet[i]);
             if (prefab != null)
             {
-                // Instantiate at the manually set position
-                Instantiate(prefab.prefab, manualPositions[i], Quaternion.identity);
+                Instantiate(prefab.prefab, locations[i], Quaternion.identity);
             }
         }
     }
@@ -60,6 +90,16 @@ public class SpawnManagerScript : MonoBehaviour
             T temp = array[i];
             array[i] = array[rnd];
             array[rnd] = temp;
+        }
+    }
+
+    void OnDrawGizmos()
+    {
+        if (playerObject != null)
+        {
+            Vector3 boxCenter = playerObject.transform.position + playerObject.transform.forward * boxDistanceInFrontOfPlayer + new Vector3(0, boxSize.y / 2, 0);
+            Gizmos.color = new Color(1, 1, 1, 0.5f);
+            Gizmos.DrawWireCube(boxCenter, boxSize);
         }
     }
 }
