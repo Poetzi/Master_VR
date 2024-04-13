@@ -26,14 +26,23 @@ public class SpawnManagerScript : MonoBehaviour
     void Start()
     {
         List<Vector3> targetLocations = GenerateUniqueLocations(4, boxSize, minDistance);
-        AssignNamesAndSpawnPrefabs(targetLocations);
+        if (targetLocations.Count < 4)
+        {
+            Debug.LogError("Failed to generate enough unique locations. Retrying...");
+            Start(); // Retry the generation process if not enough locations are generated.
+        }
+        else
+        {
+            AssignNamesAndSpawnPrefabs(targetLocations);
+        }
     }
 
     List<Vector3> GenerateUniqueLocations(int count, Vector3 size, float minDist)
     {
         List<Vector3> locations = new List<Vector3>();
+        int maxAttempts = 10000; // Significantly increase the maximum number of attempts to find locations
 
-        for (int i = 0; i < count; i++)
+        while (locations.Count < count && maxAttempts > 0)
         {
             Vector3 randomPoint = new Vector3(
                 Random.Range(-size.x / 2, size.x / 2),
@@ -46,6 +55,7 @@ public class SpawnManagerScript : MonoBehaviour
             {
                 locations.Add(potentialLocation);
             }
+            maxAttempts--;
         }
 
         return locations;
