@@ -11,8 +11,7 @@ public class SpawnManagerScript : MonoBehaviour
     }
 
     public List<SpawnablePrefab> spawnablePrefabs;
-    public GameObject playerObject;
-    public float boxDistanceInFrontOfPlayer = 1.0f; // 1 meter in front of the player
+    public Vector3 boxCenter = new Vector3(0, 1, 0); // Static position in the scene
 
     private Vector3 boxSize = new Vector3(0.91f, 0.91f, 0.46f); // Size of the gizmo box in meters
     private float minDistance = 0.05f; // Minimum distance in meters (5 cm)
@@ -33,10 +32,8 @@ public class SpawnManagerScript : MonoBehaviour
     List<Vector3> GenerateUniqueLocations(int count, Vector3 size, float minDist)
     {
         List<Vector3> locations = new List<Vector3>();
-        int attempts = 0;
-        Vector3 boxCenter = playerObject.transform.position + playerObject.transform.forward * boxDistanceInFrontOfPlayer + new Vector3(0, size.y / 2, 0);
 
-        while (locations.Count < count && attempts < 1000)
+        for (int i = 0; i < count; i++)
         {
             Vector3 randomPoint = new Vector3(
                 Random.Range(-size.x / 2, size.x / 2),
@@ -45,26 +42,23 @@ public class SpawnManagerScript : MonoBehaviour
             );
 
             Vector3 potentialLocation = boxCenter + randomPoint;
-            bool isValidLocation = true;
-
-            foreach (Vector3 otherLocation in locations)
-            {
-                if (Vector3.Distance(potentialLocation, otherLocation) < minDist)
-                {
-                    isValidLocation = false;
-                    break;
-                }
-            }
-
-            if (isValidLocation)
+            if (IsValidLocation(locations, potentialLocation, minDist))
             {
                 locations.Add(potentialLocation);
             }
-
-            attempts++;
         }
 
         return locations;
+    }
+
+    bool IsValidLocation(List<Vector3> locations, Vector3 newLocation, float minDist)
+    {
+        foreach (Vector3 otherLocation in locations)
+        {
+            if (Vector3.Distance(newLocation, otherLocation) < minDist)
+                return false;
+        }
+        return true;
     }
 
     void AssignNamesAndSpawnPrefabs(List<Vector3> locations)
@@ -95,11 +89,7 @@ public class SpawnManagerScript : MonoBehaviour
 
     void OnDrawGizmos()
     {
-        if (playerObject != null)
-        {
-            Vector3 boxCenter = playerObject.transform.position + playerObject.transform.forward * boxDistanceInFrontOfPlayer + new Vector3(0, boxSize.y / 2, 0);
-            Gizmos.color = new Color(1, 1, 1, 0.5f);
-            Gizmos.DrawWireCube(boxCenter, boxSize);
-        }
+        Gizmos.color = new Color(1, 1, 1, 0.5f);
+        Gizmos.DrawWireCube(boxCenter, boxSize);
     }
 }
