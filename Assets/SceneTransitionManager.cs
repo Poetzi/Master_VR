@@ -2,12 +2,23 @@ using UnityEngine;
 using TMPro;
 using UnityEngine.SceneManagement;
 using System.Collections;
+using System.Collections.Generic;
+
+[System.Serializable]
+public class SceneTextEntry
+{
+    public int exactVisitsRequired; // Exact number of visits required to show this text
+    public string text; // Text to display
+}
 
 public class SceneTransitionManager : MonoBehaviour
 {
     public FadeScreen fadeScreen;
-    public TextMeshProUGUI timerText;   // UI Text component to display the countdown
-    public float initialDelay = 10f;    // Delay time for the first scene visit
+    public TextMeshProUGUI displayText;   // Display Text component to show dynamic texts
+    public float initialDelay = 10f;      // Delay time for the first scene visit
+
+    [SerializeField]
+    private List<SceneTextEntry> sceneTextEntries; // List of text entries based on exact visit counts
 
     private static bool applicationStarted = false; // Static flag to check application start
 
@@ -23,15 +34,28 @@ public class SceneTransitionManager : MonoBehaviour
 
     private void Start()
     {
-        // Check if the current scene is scene index 1 and if it's the first visit
-        if (SceneManager.GetActiveScene().buildIndex == 1)
+        int currentSceneIndex = SceneManager.GetActiveScene().buildIndex;
+        // Increment the visit count for the scene
+        int visitCount = PlayerPrefs.GetInt("SceneVisitCount" + currentSceneIndex, 0);
+        PlayerPrefs.SetInt("SceneVisitCount" + currentSceneIndex, visitCount + 1);
+        PlayerPrefs.Save();
+
+        // Determine which text to display based on the exact visit count
+        SceneTextEntry matchingEntry = sceneTextEntries.Find(entry => entry.exactVisitsRequired == visitCount);
+        if (matchingEntry != null)
         {
-            bool isFirstVisit = PlayerPrefs.GetInt("FirstVisit" + SceneManager.GetActiveScene().buildIndex, 0) == 0;
-            if (isFirstVisit)
-            {
-                PlayerPrefs.SetInt("FirstVisit" + SceneManager.GetActiveScene().buildIndex, 1);
-                StartCoroutine(StartInitialCountdown());
-            }
+            displayText.text = matchingEntry.text;
+        }
+        else
+        {
+            // If no matching entry is found, you can set a default message or leave it blank
+            displayText.text = "";
+        }
+
+        // Start countdown only on the first visit to scene 1
+        if (currentSceneIndex == 1 && visitCount == 0)
+        {
+            StartCoroutine(StartInitialCountdown());
         }
     }
 
@@ -40,7 +64,7 @@ public class SceneTransitionManager : MonoBehaviour
         int sceneCount = SceneManager.sceneCountInBuildSettings;
         for (int i = 0; i < sceneCount; i++)
         {
-            PlayerPrefs.SetInt("FirstVisit" + i, 0);
+            PlayerPrefs.SetInt("SceneVisitCount" + i, 0);
         }
         PlayerPrefs.Save();
     }
@@ -48,7 +72,7 @@ public class SceneTransitionManager : MonoBehaviour
     IEnumerator StartInitialCountdown()
     {
         float timer = initialDelay;
-        timerText.gameObject.SetActive(true);
+        displayText.gameObject.SetActive(true);
 
         while (timer > 0)
         {
@@ -57,13 +81,13 @@ public class SceneTransitionManager : MonoBehaviour
             yield return null;
         }
 
-        timerText.gameObject.SetActive(false);
+        displayText.gameObject.SetActive(false);
         GoToSceneAsync(SceneManager.GetActiveScene().buildIndex - 1); // Adjust if different scene index is desired
     }
 
     void UpdateTimerDisplay(float currentTime)
     {
-        timerText.text = "Transition in: " + Mathf.Ceil(currentTime).ToString() + "s";
+        displayText.text = "Transition in: " + Mathf.Ceil(currentTime).ToString() + "s";
     }
 
     public void GoToScene(int sceneIndex)

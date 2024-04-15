@@ -22868,6 +22868,26 @@ PrefabInstance:
       propertyPath: fadeScreen
       value: 
       objectReference: {fileID: 775091317}
+    - target: {fileID: 6979412946946754608, guid: f508fd87fd95a9f44aeb272d7a58fee9, type: 3}
+      propertyPath: displayText
+      value: 
+      objectReference: {fileID: 27248838}
+    - target: {fileID: 6979412946946754608, guid: f508fd87fd95a9f44aeb272d7a58fee9, type: 3}
+      propertyPath: initialDelay
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 6979412946946754608, guid: f508fd87fd95a9f44aeb272d7a58fee9, type: 3}
+      propertyPath: sceneTextEntries.Array.size
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6979412946946754608, guid: f508fd87fd95a9f44aeb272d7a58fee9, type: 3}
+      propertyPath: sceneTextEntries.Array.data[0].text
+      value: Scene 1 / Visit 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 6979412946946754608, guid: f508fd87fd95a9f44aeb272d7a58fee9, type: 3}
+      propertyPath: sceneTextEntries.Array.data[0].exactVisitsRequired
+      value: 1
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
