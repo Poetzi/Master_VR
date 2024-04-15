@@ -1,37 +1,49 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.XR.Interaction.Toolkit; // Ensure you have this namespace to access XRIT components
+using UnityEngine.SceneManagement;
+using UnityEngine.XR.Interaction.Toolkit;
 
 public class LogInteraction : MonoBehaviour
 {
-    private XRBaseInteractor interactor;
+    private int sceneVisitCount;
 
     void Start()
     {
-        // Assuming you're using XR Grab Interactable or a similar component
+        // Assuming this script is attached to a GameObject with an XRBaseInteractable component
         var interactable = GetComponent<XRBaseInteractable>();
-        interactable.onSelectEntered.AddListener(HandleInteraction);
+        if (interactable != null)
+        {
+            interactable.onSelectEntered.AddListener(HandleInteraction);
+        }
+        else
+        {
+            Debug.LogWarning("XRBaseInteractable component not found on the GameObject.");
+        }
+
+        // Retrieve the visit count for the current scene
+        int currentSceneIndex = SceneManager.GetActiveScene().buildIndex;
+        sceneVisitCount = PlayerPrefs.GetInt("SceneVisitCount" + currentSceneIndex, 0);
     }
 
     private void HandleInteraction(XRBaseInteractor interactor)
     {
         // Capture the hand's position at the time of interaction
         Vector3 handPosition = interactor.transform.position;
+        Vector3 objectPosition = transform.position; // The position of this interactable object
 
-        // Log the interaction, for example, by printing to the console or calling another method to handle logging
-        Debug.Log($"Object: {gameObject.name}, Hand Position: {handPosition}");
+        // Log the interaction
+        Debug.Log($"Object: {gameObject.name}, Hand Position: {handPosition}, Object Position: {objectPosition}, Scene Visit: {sceneVisitCount}");
 
-        // Optionally, call a method to save this data to a file
-        InteractionLogger.LogInteraction(gameObject.name, handPosition);
+        // Call the logger to save this data to a file
+        InteractionLogger.LogInteraction(gameObject.name, handPosition, objectPosition, sceneVisitCount);
     }
 
     void OnDestroy()
     {
-        // Clean up the event listener when the object is destroyed
-        if (GetComponent<XRBaseInteractable>() != null)
+        // Assuming this script is attached to a GameObject with an XRBaseInteractable component
+        var interactable = GetComponent<XRBaseInteractable>();
+        if (interactable != null)
         {
-            GetComponent<XRBaseInteractable>().onSelectEntered.RemoveListener(HandleInteraction);
+            interactable.onSelectEntered.RemoveListener(HandleInteraction);
         }
     }
 }

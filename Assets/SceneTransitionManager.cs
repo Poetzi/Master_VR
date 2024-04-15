@@ -23,7 +23,7 @@ public class SceneTransitionManager : MonoBehaviour
     private static bool applicationStarted = false; // Static flag to check application start
 
     private void Awake()
-    {
+    {      
         if (!applicationStarted)
         {
             // Reset counters at the first launch of the application
