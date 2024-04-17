@@ -10,7 +10,7 @@ public class SceneTransitionManager : MonoBehaviour
 
     // Set these in the script for each instance of the manager
     private int targetSceneIndex = 1;     // The scene index where the timer should be active
-    private float timerDuration = 10f;    // Duration for the timer
+    private float timerDuration = 30f;    // Duration for the timer
 
     private void Start()
     {

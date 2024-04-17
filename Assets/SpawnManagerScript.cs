@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections.Generic;
+using TMPro; // Namespace for TextMesh Pro
 
 public class SpawnManagerScript : MonoBehaviour
 {
@@ -11,8 +12,11 @@ public class SpawnManagerScript : MonoBehaviour
     }
 
     public List<SpawnablePrefab> spawnablePrefabs;
-    public Vector3 boxCenter = new Vector3(0, 1, 0); // Static position in the scene
+    public GameObject startObjectPrefab; // GameObject prefab for the Start object
+    public Vector3 startObjectPosition = new Vector3(0, 0, 0); // Position for the Start object settable in the Editor
+    public TextMeshProUGUI targetNameText; // TextMesh Pro UI text element to display the target name
 
+    public Vector3 boxCenter = new Vector3(0, 1, 0); // Static position in the scene
     private Vector3 boxSize = new Vector3(0.91f, 0.91f, 0.46f); // Size of the gizmo box in meters
     private float minDistance = 0.05f; // Minimum distance in meters (5 cm)
 
@@ -22,6 +26,8 @@ public class SpawnManagerScript : MonoBehaviour
         new string[] {"Axe", "Nail", "Rake", "Saw"},
         new string[] {"Cup", "Fork", "Pan", "Wok"}
     };
+
+    private string[] selectedNameSet; // Holds the selected name set for use throughout spawning and targeting
 
     void Start()
     {
@@ -33,14 +39,39 @@ public class SpawnManagerScript : MonoBehaviour
         }
         else
         {
-            AssignNamesAndSpawnPrefabs(targetLocations);
+            selectedNameSet = nameSets[Random.Range(0, nameSets.Count)];
+            ShuffleArray(selectedNameSet);
+            AssignNamesAndSpawnPrefabs(targetLocations, selectedNameSet);
+            InstantiateStartObject();
+            UpdateTargetName(0); // Update the target name text at start with the first object's name
+        }
+    }
+
+    void AssignNamesAndSpawnPrefabs(List<Vector3> locations, string[] nameSet)
+    {
+        for (int i = 0; i < locations.Count; i++)
+        {
+            SpawnablePrefab prefab = spawnablePrefabs.Find(p => p.name == nameSet[i]);
+            if (prefab != null)
+            {
+                Instantiate(prefab.prefab, locations[i], Quaternion.identity);
+            }
+        }
+    }
+
+    void InstantiateStartObject()
+    {
+        // Instantiate the start object at the set position
+        if (startObjectPrefab != null)
+        {
+            Instantiate(startObjectPrefab, startObjectPosition, Quaternion.identity);
         }
     }
 
     List<Vector3> GenerateUniqueLocations(int count, Vector3 size, float minDist)
     {
         List<Vector3> locations = new List<Vector3>();
-        int maxAttempts = 10000; // Significantly increase the maximum number of attempts to find locations
+        int maxAttempts = 10000;
 
         while (locations.Count < count && maxAttempts > 0)
         {
@@ -71,21 +102,6 @@ public class SpawnManagerScript : MonoBehaviour
         return true;
     }
 
-    void AssignNamesAndSpawnPrefabs(List<Vector3> locations)
-    {
-        string[] selectedNameSet = nameSets[Random.Range(0, nameSets.Count)];
-        ShuffleArray(selectedNameSet);
-
-        for (int i = 0; i < locations.Count; i++)
-        {
-            SpawnablePrefab prefab = spawnablePrefabs.Find(p => p.name == selectedNameSet[i]);
-            if (prefab != null)
-            {
-                Instantiate(prefab.prefab, locations[i], Quaternion.identity);
-            }
-        }
-    }
-
     void ShuffleArray<T>(T[] array)
     {
         for (int i = 0; i < array.Length - 1; i++)
@@ -94,6 +110,14 @@ public class SpawnManagerScript : MonoBehaviour
             T temp = array[i];
             array[i] = array[rnd];
             array[rnd] = temp;
+        }
+    }
+
+    void UpdateTargetName(int targetIndex)
+    {
+        if (targetIndex < selectedNameSet.Length)
+        {
+            targetNameText.text = selectedNameSet[targetIndex]; // Update the text field to show the name of the target
         }
     }
 
