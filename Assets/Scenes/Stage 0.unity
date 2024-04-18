@@ -1198,9 +1198,11 @@ MonoBehaviour:
   - prefab: {fileID: 8125993065099215665, guid: 75dfa75088581a046939b461d87150ae, type: 3}
     name: Wok
   startObjectPrefab: {fileID: 8125993065099215665, guid: 23a0df6d41560ef4fbea68357b5f97f6, type: 3}
-  startObjectPosition: {x: 0.3, y: 1, z: 0}
+  startObjectPosition: {x: 0.3, y: 2, z: 1}
   targetNameText: {fileID: 679954518}
   boxCenter: {x: 0, y: 1.5, z: 1}
+  boxSize: {x: 0.91, y: 0.91, z: 0.46}
+  minDistance: 0.05
 --- !u!1 &128513415
 GameObject:
   m_ObjectHideFlags: 0
@@ -14207,7 +14209,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4165844972641582993, guid: 0ec4187475a53bc449e36d99d9cc555c, type: 3}
       propertyPath: m_IsActive
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -20980,7 +20982,7 @@ Light:
   m_BounceIntensity: 1
   m_ColorTemperature: 6570
   m_UseColorTemperature: 0
-  m_BoundingSphereOverride: {x: 0, y: -0, z: 0, w: 1.0569486e+32}
+  m_BoundingSphereOverride: {x: 0, y: NaN, z: 0, w: -2.1420142e-36}
   m_UseBoundingSphereOverride: 0
   m_UseViewFrustumForShadowCasterCull: 1
   m_ShadowRadius: 0

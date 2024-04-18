@@ -1,5 +1,4 @@
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class FadeScreen : MonoBehaviour
@@ -13,7 +12,7 @@ public class FadeScreen : MonoBehaviour
     void Start()
     {
         rend = GetComponent<Renderer>();
-        if (fadeOnStart )
+        if (fadeOnStart)
         {
             FadeIn();
         }
@@ -24,9 +23,9 @@ public class FadeScreen : MonoBehaviour
         Fade(1, 0);
     }
 
-    public void FadeOut() 
-    { 
-        Fade(0,1);
+    public void FadeOut()
+    {
+        Fade(0, 1);
     }
 
     public void Fade(float alphaIn, float alphaOut)
@@ -34,7 +33,7 @@ public class FadeScreen : MonoBehaviour
         StartCoroutine(FadeRoutine(alphaIn, alphaOut));
     }
 
-    public IEnumerator FadeRoutine (float alphaIn, float alphaOut)
+    public IEnumerator FadeRoutine(float alphaIn, float alphaOut)
     {
         float timer = 0;
         while (timer < fadeDuration)

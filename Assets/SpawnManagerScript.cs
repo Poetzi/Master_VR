@@ -1,6 +1,10 @@
-using UnityEngine;
 using System.Collections.Generic;
-using TMPro; // Namespace for TextMesh Pro
+using System.IO;
+using TMPro;
+using UnityEngine;
+using UnityEngine.InputSystem;
+using UnityEngine.XR;
+using UnityEngine.XR.Interaction.Toolkit;
 
 public class SpawnManagerScript : MonoBehaviour
 {
@@ -11,14 +15,13 @@ public class SpawnManagerScript : MonoBehaviour
         public string name;
     }
 
-    public List<SpawnablePrefab> spawnablePrefabs;
-    public GameObject startObjectPrefab; // GameObject prefab for the Start object
-    public Vector3 startObjectPosition = new Vector3(0, 0, 0); // Position for the Start object settable in the Editor
-    public TextMeshProUGUI targetNameText; // TextMesh Pro UI text element to display the target name
-
-    public Vector3 boxCenter = new Vector3(0, 1, 0); // Static position in the scene
-    private Vector3 boxSize = new Vector3(0.91f, 0.91f, 0.46f); // Size of the gizmo box in meters
-    private float minDistance = 0.05f; // Minimum distance in meters (5 cm)
+    [SerializeField] private List<SpawnablePrefab> spawnablePrefabs;
+    [SerializeField] private GameObject startObjectPrefab;
+    [SerializeField] private Vector3 startObjectPosition = new Vector3(0, 0, 0);
+    [SerializeField] private TextMeshProUGUI targetNameText;
+    [SerializeField] private Vector3 boxCenter = new Vector3(0, 1, 0);
+    [SerializeField] private Vector3 boxSize = new Vector3(0.91f, 0.91f, 0.46f);
+    [SerializeField] private float minDistance = 0.05f;
 
     private List<string[]> nameSets = new List<string[]>()
     {
@@ -27,27 +30,119 @@ public class SpawnManagerScript : MonoBehaviour
         new string[] {"Cup", "Fork", "Pan", "Wok"}
     };
 
-    private string[] selectedNameSet; // Holds the selected name set for use throughout spawning and targeting
+    private string[] selectedNameSet;
+    private bool timerRunning = false;
+    private bool buttonReleased = true;
+    private float startTime;
+    private GameObject startObjectInstance;
+    private XRBaseInteractable startInteractable;
 
     void Start()
+    {
+        TryGenerateObjects();
+    }
+
+    private void TryGenerateObjects()
     {
         List<Vector3> targetLocations = GenerateUniqueLocations(4, boxSize, minDistance);
         if (targetLocations.Count < 4)
         {
             Debug.LogError("Failed to generate enough unique locations. Retrying...");
-            Start(); // Retry the generation process if not enough locations are generated.
+            Start();
         }
         else
         {
-            selectedNameSet = nameSets[Random.Range(0, nameSets.Count)];
-            ShuffleArray(selectedNameSet);
-            AssignNamesAndSpawnPrefabs(targetLocations, selectedNameSet);
-            InstantiateStartObject();
-            UpdateTargetName(0); // Update the target name text at start with the first object's name
+            InitializeObjects(targetLocations);
         }
     }
 
-    void AssignNamesAndSpawnPrefabs(List<Vector3> locations, string[] nameSet)
+    private void InitializeObjects(List<Vector3> targetLocations)
+    {
+        selectedNameSet = nameSets[Random.Range(0, nameSets.Count)];
+        ShuffleArray(selectedNameSet);
+        AssignNamesAndSpawnPrefabs(targetLocations, selectedNameSet);
+        startObjectInstance = InstantiateStartObject();
+        UpdateTargetName(0);
+    }
+
+    private GameObject InstantiateStartObject()
+    {
+        if (startObjectPrefab != null)
+        {
+            GameObject startObject = Instantiate(startObjectPrefab, startObjectPosition, Quaternion.identity);
+            startInteractable = startObject.GetComponent<XRBaseInteractable>();
+            if (startInteractable != null)
+            {
+                startInteractable.selectEntered.AddListener(StartInteraction);
+                startInteractable.selectExited.AddListener(EndInteraction);
+            }
+            return startObject;
+        }
+        return null;
+    }
+
+    private void StartInteraction(SelectEnterEventArgs args)
+    {
+        buttonReleased = false;
+    }
+
+    private void EndInteraction(SelectExitEventArgs args)
+    {
+        buttonReleased = true;
+        if (!timerRunning)
+        {
+            StartTimer();
+        }
+    }
+
+    private void StartTimer()
+    {
+        Debug.Log("Timer Starts");
+        startTime = Time.time;
+        timerRunning = true;
+    }
+
+    void Update()
+    {
+        CheckForTimerStop();
+    }
+
+    private void CheckForTimerStop()
+    {
+        if (timerRunning && buttonReleased && TryGetPrimaryButton(out bool primaryButtonValue) && primaryButtonValue)
+        {
+            StopTimer();
+        }
+    }
+
+    private void StopTimer()
+    {
+        Debug.Log("Timer Ends");
+        float elapsedTime = Time.time - startTime;
+        timerRunning = false;
+        buttonReleased = false;
+        Vector3 controllerPosition = GetRightControllerPosition();
+        LogTimeAndPosition(elapsedTime, controllerPosition);
+    }
+
+    private void LogTimeAndPosition(float time, Vector3 position)
+    {
+        string filePath = Application.persistentDataPath + "/interactionTimes.csv";
+        using (StreamWriter writer = new StreamWriter(filePath, true))
+        {
+            writer.WriteLine($"{System.DateTime.Now:yyyy-MM-dd HH:mm:ss}, {time}, {position.x}, {position.y}, {position.z}");
+        }
+        Debug.Log($"Logged time: {time} and position: {position}");
+    }
+
+    private Vector3 GetRightControllerPosition()
+    {
+        UnityEngine.XR.InputDevice rightController = InputDevices.GetDeviceAtXRNode(XRNode.RightHand);
+        rightController.TryGetFeatureValue(UnityEngine.XR.CommonUsages.devicePosition, out Vector3 position);
+        return position;
+    }
+
+    private void AssignNamesAndSpawnPrefabs(List<Vector3> locations, string[] nameSet)
     {
         for (int i = 0; i < locations.Count; i++)
         {
@@ -59,40 +154,22 @@ public class SpawnManagerScript : MonoBehaviour
         }
     }
 
-    void InstantiateStartObject()
-    {
-        // Instantiate the start object at the set position
-        if (startObjectPrefab != null)
-        {
-            Instantiate(startObjectPrefab, startObjectPosition, Quaternion.identity);
-        }
-    }
-
-    List<Vector3> GenerateUniqueLocations(int count, Vector3 size, float minDist)
+    private List<Vector3> GenerateUniqueLocations(int count, Vector3 size, float minDist)
     {
         List<Vector3> locations = new List<Vector3>();
         int maxAttempts = 10000;
-
-        while (locations.Count < count && maxAttempts > 0)
+        while (locations.Count < count && maxAttempts-- > 0)
         {
-            Vector3 randomPoint = new Vector3(
-                Random.Range(-size.x / 2, size.x / 2),
-                Random.Range(-size.y / 2, size.y / 2),
-                Random.Range(-size.z / 2, size.z / 2)
-            );
-
-            Vector3 potentialLocation = boxCenter + randomPoint;
+            Vector3 potentialLocation = GenerateRandomPoint(size);
             if (IsValidLocation(locations, potentialLocation, minDist))
             {
                 locations.Add(potentialLocation);
             }
-            maxAttempts--;
         }
-
         return locations;
     }
 
-    bool IsValidLocation(List<Vector3> locations, Vector3 newLocation, float minDist)
+    private bool IsValidLocation(List<Vector3> locations, Vector3 newLocation, float minDist)
     {
         foreach (Vector3 otherLocation in locations)
         {
@@ -102,23 +179,37 @@ public class SpawnManagerScript : MonoBehaviour
         return true;
     }
 
-    void ShuffleArray<T>(T[] array)
+    private Vector3 GenerateRandomPoint(Vector3 size)
     {
-        for (int i = 0; i < array.Length - 1; i++)
+        return boxCenter + new Vector3(
+            Random.Range(-size.x / 2, size.x / 2),
+            Random.Range(-size.y / 2, size.y / 2),
+            Random.Range(-size.z / 2, size.z / 2)
+        );
+    }
+
+    private void ShuffleArray<T>(T[] array)
+    {
+        for (int i = array.Length - 1; i > 0; i--)
         {
-            int rnd = Random.Range(i, array.Length);
+            int j = Random.Range(0, i + 1);
             T temp = array[i];
-            array[i] = array[rnd];
-            array[rnd] = temp;
+            array[i] = array[j];
+            array[j] = temp;
         }
     }
 
-    void UpdateTargetName(int targetIndex)
+    private void UpdateTargetName(int targetIndex)
     {
         if (targetIndex < selectedNameSet.Length)
         {
-            targetNameText.text = selectedNameSet[targetIndex]; // Update the text field to show the name of the target
+            targetNameText.text = selectedNameSet[targetIndex];
         }
+    }
+
+    private bool TryGetPrimaryButton(out bool buttonValue)
+    {
+        return InputDevices.GetDeviceAtXRNode(XRNode.LeftHand).TryGetFeatureValue(UnityEngine.XR.CommonUsages.primaryButton, out buttonValue);
     }
 
     void OnDrawGizmos()
