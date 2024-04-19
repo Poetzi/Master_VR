@@ -22,6 +22,7 @@ public class SpawnManagerScript : MonoBehaviour
     [SerializeField] private Vector3 boxCenter = new Vector3(0, 1, 0);
     [SerializeField] private Vector3 boxSize = new Vector3(0.91f, 0.91f, 0.46f);
     [SerializeField] private float minDistance = 0.05f;
+    [SerializeField] private int maxCycles = 1; // Settable in the Unity editor
 
     private List<string[]> nameSets = new List<string[]>()
     {
@@ -30,7 +31,11 @@ public class SpawnManagerScript : MonoBehaviour
         new string[] {"Cup", "Fork", "Pan", "Wok"}
     };
 
+    private Dictionary<string, GameObject> instantiatedObjects = new Dictionary<string, GameObject>();
+    private List<GameObject> instantiatedPrefabs = new List<GameObject>();
     private string[] selectedNameSet;
+    private int currentTargetIndex = 0;
+    private int currentCycle = 0; // Current cycle count
     private bool timerRunning = false;
     private bool buttonReleased = true;
     private float startTime;
@@ -62,7 +67,13 @@ public class SpawnManagerScript : MonoBehaviour
         ShuffleArray(selectedNameSet);
         AssignNamesAndSpawnPrefabs(targetLocations, selectedNameSet);
         startObjectInstance = InstantiateStartObject();
-        UpdateTargetName(0);
+        UpdateTargetName(currentTargetIndex);
+    }
+
+    private void SelectNewNameSet()
+    {
+        selectedNameSet = nameSets[Random.Range(0, nameSets.Count)];
+        ShuffleArray(selectedNameSet);
     }
 
     private GameObject InstantiateStartObject()
@@ -89,7 +100,7 @@ public class SpawnManagerScript : MonoBehaviour
     private void EndInteraction(SelectExitEventArgs args)
     {
         buttonReleased = true;
-        if (!timerRunning)
+        if (!timerRunning && currentCycle < maxCycles)
         {
             StartTimer();
         }
@@ -119,20 +130,44 @@ public class SpawnManagerScript : MonoBehaviour
     {
         Debug.Log("Timer Ends");
         float elapsedTime = Time.time - startTime;
+        string targetName = selectedNameSet[currentTargetIndex];
         timerRunning = false;
         buttonReleased = false;
         Vector3 controllerPosition = GetRightControllerPosition();
-        LogTimeAndPosition(elapsedTime, controllerPosition);
+        Vector3 targetObjectPosition = instantiatedObjects[targetName].transform.position;
+        LogTimePositionAndTarget(elapsedTime, controllerPosition, targetObjectPosition, targetName);
+
+        currentTargetIndex++;
+        if (currentTargetIndex >= selectedNameSet.Length)
+        {
+            currentTargetIndex = 0;
+            currentCycle++;
+
+            if (currentCycle < maxCycles)
+            {
+                ShuffleArray(selectedNameSet);
+            }
+        }
+
+        if (currentCycle < maxCycles)
+        {
+            UpdateTargetName(currentTargetIndex);
+        }
     }
 
-    private void LogTimeAndPosition(float time, Vector3 position)
+    private void LogTimePositionAndTarget(float time, Vector3 controllerPosition, Vector3 targetPosition, string targetName)
     {
         string filePath = Application.persistentDataPath + "/interactionTimes.csv";
+        bool fileExists = File.Exists(filePath);
+
         using (StreamWriter writer = new StreamWriter(filePath, true))
         {
-            writer.WriteLine($"{System.DateTime.Now:yyyy-MM-dd HH:mm:ss}, {time}, {position.x}, {position.y}, {position.z}");
+            if (!fileExists || new FileInfo(filePath).Length == 0)
+            {
+                writer.WriteLine("Cycle, Timestamp, Elapsed Time (s), Controller X, Controller Y, Controller Z, Target Name, Target X, Target Y, Target Z");
+            }
+            writer.WriteLine($"{currentCycle}, {System.DateTime.Now:yyyy-MM-dd HH:mm:ss}, {time:F3}, {controllerPosition.x:F3}, {controllerPosition.y:F3}, {controllerPosition.z:F3}, {targetName}, {targetPosition.x:F3}, {targetPosition.y:F3}, {targetPosition.z:F3}");
         }
-        Debug.Log($"Logged time: {time} and position: {position}");
     }
 
     private Vector3 GetRightControllerPosition()
@@ -144,12 +179,14 @@ public class SpawnManagerScript : MonoBehaviour
 
     private void AssignNamesAndSpawnPrefabs(List<Vector3> locations, string[] nameSet)
     {
+        instantiatedObjects.Clear();
         for (int i = 0; i < locations.Count; i++)
         {
             SpawnablePrefab prefab = spawnablePrefabs.Find(p => p.name == nameSet[i]);
             if (prefab != null)
             {
-                Instantiate(prefab.prefab, locations[i], Quaternion.identity);
+                GameObject instantiatedPrefab = Instantiate(prefab.prefab, locations[i], Quaternion.identity);
+                instantiatedObjects.Add(prefab.name, instantiatedPrefab);
             }
         }
     }
