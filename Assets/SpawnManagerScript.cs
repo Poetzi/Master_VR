@@ -28,7 +28,7 @@ public class SpawnManagerScript : MonoBehaviour
     [SerializeField] private SceneTransitionManager sceneTransitionManager;
     [SerializeField] private int participant;
 
-    private string[] nameSet = new string[] { "Ant", "Bee", "Cat", "Dog" };
+    [SerializeField] private string[] nameSet; // Names set through the Unity Inspector
     private Dictionary<string, GameObject> instantiatedObjects = new Dictionary<string, GameObject>();
     private int currentTargetIndex = 0;
     private int currentCycle = 0;
