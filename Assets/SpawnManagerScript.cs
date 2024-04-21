@@ -3,6 +3,7 @@ using System.IO;
 using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.SceneManagement;
 using UnityEngine.XR;
 using UnityEngine.XR.Interaction.Toolkit;
 
@@ -13,6 +14,7 @@ public class SpawnManagerScript : MonoBehaviour
     {
         public GameObject prefab;
         public string name;
+
     }
 
     [SerializeField] private List<SpawnablePrefab> spawnablePrefabs;
@@ -22,88 +24,67 @@ public class SpawnManagerScript : MonoBehaviour
     [SerializeField] private Vector3 boxCenter = new Vector3(0, 1, 0);
     [SerializeField] private Vector3 boxSize = new Vector3(0.91f, 0.91f, 0.46f);
     [SerializeField] private float minDistance = 0.05f;
-    [SerializeField] private int maxCycles = 1; // Settable in the Unity editor
+    [SerializeField] private int maxCycles = 1;
+    [SerializeField] private SceneTransitionManager sceneTransitionManager;
 
-    private List<string[]> nameSets = new List<string[]>()
-    {
-        new string[] {"Ant", "Bee", "Cat", "Dog"},
-        new string[] {"Axe", "Nail", "Rake", "Saw"},
-        new string[] {"Cup", "Fork", "Pan", "Wok"}
-    };
-
+    private List<string[]> nameSets = new List<string[]> { new string[] { "Ant", "Bee", "Cat", "Dog" }, new string[] { "Axe", "Nail", "Rake", "Saw" }, new string[] { "Cup", "Fork", "Pan", "Wok" } };
     private Dictionary<string, GameObject> instantiatedObjects = new Dictionary<string, GameObject>();
-    private List<GameObject> instantiatedPrefabs = new List<GameObject>();
     private string[] selectedNameSet;
     private int currentTargetIndex = 0;
-    private int currentCycle = 0; // Current cycle count
+    private int currentCycle = 0;
     private bool timerRunning = false;
     private bool buttonReleased = true;
     private float startTime;
     private GameObject startObjectInstance;
-    private XRBaseInteractable startInteractable;
 
     void Start()
     {
-        TryGenerateObjects();
-    }
-
-    private void TryGenerateObjects()
-    {
-        List<Vector3> targetLocations = GenerateUniqueLocations(4, boxSize, minDistance);
-        if (targetLocations.Count < 4)
+        if (!TryGenerateObjects())
         {
             Debug.LogError("Failed to generate enough unique locations. Retrying...");
             Start();
         }
-        else
-        {
-            InitializeObjects(targetLocations);
-        }
     }
 
-    private void InitializeObjects(List<Vector3> targetLocations)
+    private bool TryGenerateObjects()
     {
-        selectedNameSet = nameSets[Random.Range(0, nameSets.Count)];
-        ShuffleArray(selectedNameSet);
+        List<Vector3> targetLocations = GenerateUniqueLocations(4, boxSize, minDistance);
+        if (targetLocations.Count < 4) return false;
+
+        selectedNameSet = SelectRandomNameSet();
         AssignNamesAndSpawnPrefabs(targetLocations, selectedNameSet);
         startObjectInstance = InstantiateStartObject();
         UpdateTargetName(currentTargetIndex);
+        return true;
     }
 
-    private void SelectNewNameSet()
+    private string[] SelectRandomNameSet()
     {
-        selectedNameSet = nameSets[Random.Range(0, nameSets.Count)];
-        ShuffleArray(selectedNameSet);
+        var setName = nameSets[Random.Range(0, nameSets.Count)];
+        ShuffleArray(setName);
+        return setName;
     }
 
     private GameObject InstantiateStartObject()
     {
-        if (startObjectPrefab != null)
+        if (startObjectPrefab == null) return null;
+
+        GameObject startObject = Instantiate(startObjectPrefab, startObjectPosition, Quaternion.identity);
+        if (startObject.TryGetComponent<XRBaseInteractable>(out var interactable))
         {
-            GameObject startObject = Instantiate(startObjectPrefab, startObjectPosition, Quaternion.identity);
-            startInteractable = startObject.GetComponent<XRBaseInteractable>();
-            if (startInteractable != null)
-            {
-                startInteractable.selectEntered.AddListener(StartInteraction);
-                startInteractable.selectExited.AddListener(EndInteraction);
-            }
-            return startObject;
+            interactable.selectEntered.AddListener(StartInteraction);
+            interactable.selectExited.AddListener(EndInteraction);
         }
-        return null;
+        return startObject;
     }
 
-    private void StartInteraction(SelectEnterEventArgs args)
-    {
-        buttonReleased = false;
-    }
+    private void StartInteraction(SelectEnterEventArgs args) => buttonReleased = false;
 
     private void EndInteraction(SelectExitEventArgs args)
     {
         buttonReleased = true;
         if (!timerRunning && currentCycle < maxCycles)
-        {
             StartTimer();
-        }
     }
 
     private void StartTimer()
@@ -115,58 +96,53 @@ public class SpawnManagerScript : MonoBehaviour
 
     void Update()
     {
-        CheckForTimerStop();
-    }
-
-    private void CheckForTimerStop()
-    {
         if (timerRunning && buttonReleased && TryGetPrimaryButton(out bool primaryButtonValue) && primaryButtonValue)
-        {
             StopTimer();
-        }
     }
 
     private void StopTimer()
     {
         Debug.Log("Timer Ends");
-        float elapsedTime = Time.time - startTime;
-        string targetName = selectedNameSet[currentTargetIndex];
         timerRunning = false;
         buttonReleased = false;
+        float elapsedTime = Time.time - startTime;
+        string targetName = selectedNameSet[currentTargetIndex];
         Vector3 controllerPosition = GetRightControllerPosition();
         Vector3 targetObjectPosition = instantiatedObjects[targetName].transform.position;
         LogTimePositionAndTarget(elapsedTime, controllerPosition, targetObjectPosition, targetName);
 
-        currentTargetIndex++;
-        if (currentTargetIndex >= selectedNameSet.Length)
+        if (++currentTargetIndex >= selectedNameSet.Length)
         {
             currentTargetIndex = 0;
-            currentCycle++;
-
-            if (currentCycle < maxCycles)
+            if (++currentCycle >= maxCycles)
             {
-                ShuffleArray(selectedNameSet);
+                Debug.Log("Max cycles reached. Initiating scene transition.");
+                sceneTransitionManager.GoToSceneAsync(SceneManager.GetActiveScene().buildIndex + 1);
+                return;
             }
+            ShuffleArray(selectedNameSet);
         }
-
-        if (currentCycle < maxCycles)
-        {
-            UpdateTargetName(currentTargetIndex);
-        }
+        UpdateTargetName(currentTargetIndex);
     }
+
 
     private void LogTimePositionAndTarget(float time, Vector3 controllerPosition, Vector3 targetPosition, string targetName)
     {
         string filePath = Application.persistentDataPath + "/interactionTimes.csv";
         bool fileExists = File.Exists(filePath);
 
+        // Get current scene information
+        Scene currentScene = SceneManager.GetActiveScene();
+        int sceneIndex = currentScene.buildIndex;
+        string sceneName = currentScene.name;
+
         using (StreamWriter writer = new StreamWriter(filePath, true))
         {
             if (!fileExists || new FileInfo(filePath).Length == 0)
             {
-                writer.WriteLine("Cycle, Timestamp, Elapsed Time (s), Controller X, Controller Y, Controller Z, Target Name, Target X, Target Y, Target Z");
+                writer.WriteLine("Cycle, Scene Index, Scene Name, Timestamp, Elapsed Time (s), Controller X, Controller Y, Controller Z, Target Name, Target X, Target Y, Target Z");
             }
-            writer.WriteLine($"{currentCycle}, {System.DateTime.Now:yyyy-MM-dd HH:mm:ss}, {time:F3}, {controllerPosition.x:F3}, {controllerPosition.y:F3}, {controllerPosition.z:F3}, {targetName}, {targetPosition.x:F3}, {targetPosition.y:F3}, {targetPosition.z:F3}");
+            writer.WriteLine($"{currentCycle}, {sceneIndex}, {sceneName}, {System.DateTime.Now:yyyy-MM-dd HH:mm:ss}, {time:F3}, {controllerPosition.x:F3}, {controllerPosition.y:F3}, {controllerPosition.z:F3}, {targetName}, {targetPosition.x:F3}, {targetPosition.y:F3}, {targetPosition.z:F3}");
         }
     }
 

@@ -9,7 +9,7 @@ public class SceneTransitionManager : MonoBehaviour
     public TextMeshProUGUI displayText;   // Display Text component to show dynamic texts
 
     // Set these in the script for each instance of the manager
-    private int targetSceneIndex = 1;     // The scene index where the timer should be active
+    private int targetSceneIndex = 10;     // The scene index where the timer should be active
     private float timerDuration = 30f;    // Duration for the timer
 
     private void Start()
