@@ -1039,30 +1039,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   spawnablePrefabs:
-  - prefab: {fileID: 8125993065099215665, guid: 79bac6820095fb04a83fd282a6e558ec, type: 3}
+  - prefab: {fileID: 8125993065099215665, guid: 7f4d2104a228ac94ca6adde67f485cda, type: 3}
     name: Ant
-  - prefab: {fileID: 8125993065099215665, guid: 935f8cf56f844a2418140c0742425b6e, type: 3}
-    name: Axe
-  - prefab: {fileID: 8125993065099215665, guid: 6698a15efeb41024cb1077a5766b63ce, type: 3}
+  - prefab: {fileID: 8125993065099215665, guid: 1f5e2a25cb961e14d8b1ea63638dc36e, type: 3}
     name: Bee
-  - prefab: {fileID: 8125993065099215665, guid: cd29098dbfe115347b9f8b475bd7129e, type: 3}
+  - prefab: {fileID: 8125993065099215665, guid: a69561cc76863ce41a62ca72e6dfda98, type: 3}
     name: Cat
-  - prefab: {fileID: 8125993065099215665, guid: 60c396e3fe76e7a48b6405efbe2fc83f, type: 3}
-    name: Cup
-  - prefab: {fileID: 8125993065099215665, guid: 2adff1a3e80a9e44aad1304675f05a97, type: 3}
+  - prefab: {fileID: 8125993065099215665, guid: 9444cd598e13e934a82743fcb067d414, type: 3}
     name: Dog
-  - prefab: {fileID: 8125993065099215665, guid: 80d7978c810bae24a80cf22f5e2f0ff4, type: 3}
-    name: Fork
-  - prefab: {fileID: 8125993065099215665, guid: 4df002799201d0a488c619950fd26e4f, type: 3}
-    name: Nail
-  - prefab: {fileID: 8125993065099215665, guid: f179d296049bcca4595712c0210e9d68, type: 3}
-    name: Pan
-  - prefab: {fileID: 8125993065099215665, guid: 5e313003ff4211649b734d6eb2e27573, type: 3}
-    name: Rake
-  - prefab: {fileID: 8125993065099215665, guid: c46548bd05a842447a42ee1c1b3d4930, type: 3}
-    name: Saw
-  - prefab: {fileID: 8125993065099215665, guid: 75dfa75088581a046939b461d87150ae, type: 3}
-    name: Wok
   startObjectPrefab: {fileID: 8125993065099215665, guid: 23a0df6d41560ef4fbea68357b5f97f6, type: 3}
   startObjectPosition: {x: 0.5, y: 1.5, z: 0.5}
   targetNameText: {fileID: 679954518}
@@ -1071,6 +1055,12 @@ MonoBehaviour:
   minDistance: 0.05
   maxCycles: 3
   sceneTransitionManager: {fileID: 488114475}
+  participant: 1
+  nameSet:
+  - Ant
+  - Bee
+  - Cat
+  - Dog
 --- !u!1 &128513415
 GameObject:
   m_ObjectHideFlags: 0
@@ -20753,7 +20743,7 @@ Light:
   m_BounceIntensity: 1
   m_ColorTemperature: 6570
   m_UseColorTemperature: 0
-  m_BoundingSphereOverride: {x: 1.561202e-39, y: 6e-44, z: 3e-44, w: 6.481e-42}
+  m_BoundingSphereOverride: {x: 5.34e-43, y: 5.4479256e-36, z: 5.34e-43, w: 2.75508e-40}
   m_UseBoundingSphereOverride: 0
   m_UseViewFrustumForShadowCasterCull: 1
   m_ShadowRadius: 0
