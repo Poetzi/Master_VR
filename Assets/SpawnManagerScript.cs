@@ -6,6 +6,7 @@ using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
 using UnityEngine.XR;
 using UnityEngine.XR.Interaction.Toolkit;
+using System.Globalization;
 
 public class SpawnManagerScript : MonoBehaviour
 {
@@ -14,7 +15,6 @@ public class SpawnManagerScript : MonoBehaviour
     {
         public GameObject prefab;
         public string name;
-
     }
 
     [SerializeField] private List<SpawnablePrefab> spawnablePrefabs;
@@ -26,16 +26,18 @@ public class SpawnManagerScript : MonoBehaviour
     [SerializeField] private float minDistance = 0.05f;
     [SerializeField] private int maxCycles = 1;
     [SerializeField] private SceneTransitionManager sceneTransitionManager;
+    [SerializeField] private int participant;
 
-    private List<string[]> nameSets = new List<string[]> { new string[] { "Ant", "Bee", "Cat", "Dog" }, new string[] { "Axe", "Nail", "Rake", "Saw" }, new string[] { "Cup", "Fork", "Pan", "Wok" } };
+    private string[] nameSet = new string[] { "Ant", "Bee", "Cat", "Dog" };
     private Dictionary<string, GameObject> instantiatedObjects = new Dictionary<string, GameObject>();
-    private string[] selectedNameSet;
     private int currentTargetIndex = 0;
     private int currentCycle = 0;
     private bool timerRunning = false;
     private bool buttonReleased = true;
     private float startTime;
     private GameObject startObjectInstance;
+    private int entryNumber = 1;
+    private Vector3 firstClickControllerPosition;
 
     void Start()
     {
@@ -51,24 +53,21 @@ public class SpawnManagerScript : MonoBehaviour
         List<Vector3> targetLocations = GenerateUniqueLocations(4, boxSize, minDistance);
         if (targetLocations.Count < 4) return false;
 
-        selectedNameSet = SelectRandomNameSet();
-        AssignNamesAndSpawnPrefabs(targetLocations, selectedNameSet);
+        ShuffleNameSet(); // Shuffle the name set before assigning
+        AssignNamesAndSpawnPrefabs(targetLocations, nameSet); // Directly use the shuffled nameSet
         startObjectInstance = InstantiateStartObject();
         UpdateTargetName(currentTargetIndex);
         return true;
     }
 
-    private string[] SelectRandomNameSet()
+    private void ShuffleNameSet()
     {
-        var setName = nameSets[Random.Range(0, nameSets.Count)];
-        ShuffleArray(setName);
-        return setName;
+        ShuffleArray(nameSet);
     }
 
     private GameObject InstantiateStartObject()
     {
         if (startObjectPrefab == null) return null;
-
         GameObject startObject = Instantiate(startObjectPrefab, startObjectPosition, Quaternion.identity);
         if (startObject.TryGetComponent<XRBaseInteractable>(out var interactable))
         {
@@ -78,7 +77,11 @@ public class SpawnManagerScript : MonoBehaviour
         return startObject;
     }
 
-    private void StartInteraction(SelectEnterEventArgs args) => buttonReleased = false;
+    private void StartInteraction(SelectEnterEventArgs args)
+    {
+        buttonReleased = false;
+        firstClickControllerPosition = GetRightControllerPosition(); // Capture the controller position at the moment of interaction
+    }
 
     private void EndInteraction(SelectExitEventArgs args)
     {
@@ -106,12 +109,13 @@ public class SpawnManagerScript : MonoBehaviour
         timerRunning = false;
         buttonReleased = false;
         float elapsedTime = Time.time - startTime;
-        string targetName = selectedNameSet[currentTargetIndex];
+        string targetName = nameSet[currentTargetIndex];
         Vector3 controllerPosition = GetRightControllerPosition();
         Vector3 targetObjectPosition = instantiatedObjects[targetName].transform.position;
-        LogTimePositionAndTarget(elapsedTime, controllerPosition, targetObjectPosition, targetName);
+        Vector3 startObjectPosition = startObjectInstance.transform.position;
+        LogTimePositionAndTarget(elapsedTime, controllerPosition, targetObjectPosition, targetName, startObjectPosition, firstClickControllerPosition);
 
-        if (++currentTargetIndex >= selectedNameSet.Length)
+        if (++currentTargetIndex >= nameSet.Length)
         {
             currentTargetIndex = 0;
             if (++currentCycle >= maxCycles)
@@ -120,29 +124,29 @@ public class SpawnManagerScript : MonoBehaviour
                 sceneTransitionManager.GoToSceneAsync(SceneManager.GetActiveScene().buildIndex + 1);
                 return;
             }
-            ShuffleArray(selectedNameSet);
+            ShuffleNameSet();
         }
         UpdateTargetName(currentTargetIndex);
     }
 
-
-    private void LogTimePositionAndTarget(float time, Vector3 controllerPosition, Vector3 targetPosition, string targetName)
+    private void LogTimePositionAndTarget(float time, Vector3 controllerPosition, Vector3 targetPosition, string targetName, Vector3 startObjectPosition, Vector3 firstInteractionControllerPosition)
     {
-        string filePath = Application.persistentDataPath + "/interactionTimes.csv";
-        bool fileExists = File.Exists(filePath);
-
-        // Get current scene information
+        string date = System.DateTime.Now.ToString("yyyyMMdd");
         Scene currentScene = SceneManager.GetActiveScene();
         int sceneIndex = currentScene.buildIndex;
         string sceneName = currentScene.name;
+        string filename = $"Participant_{participant}_{sceneName}_{date}_log.csv";
+        string filePath = Path.Combine(Application.persistentDataPath, filename);
+        bool fileExists = File.Exists(filePath);
 
         using (StreamWriter writer = new StreamWriter(filePath, true))
         {
             if (!fileExists || new FileInfo(filePath).Length == 0)
             {
-                writer.WriteLine("Cycle, Scene Index, Scene Name, Timestamp, Elapsed Time (s), Controller X, Controller Y, Controller Z, Target Name, Target X, Target Y, Target Z");
+                writer.WriteLine("Entry Number, Participant, Block, SceneIndex, SceneName, Timestamp, ElapsedTime(s), ControllerX, ControllerY, ControllerZ, TargetName, TargetX, TargetY, TargetZ, StartObjectX, StartObjectY, StartObjectZ, FirstInteractionControllerX, FirstInteractionControllerY, FirstInteractionControllerZ");
             }
-            writer.WriteLine($"{currentCycle}, {sceneIndex}, {sceneName}, {System.DateTime.Now:yyyy-MM-dd HH:mm:ss}, {time:F3}, {controllerPosition.x:F3}, {controllerPosition.y:F3}, {controllerPosition.z:F3}, {targetName}, {targetPosition.x:F3}, {targetPosition.y:F3}, {targetPosition.z:F3}");
+            writer.WriteLine($"{entryNumber}; {participant}; {currentCycle}; {sceneIndex}; {sceneName}; {System.DateTime.Now:yyyy-MM-dd HH:mm:ss}; {time.ToString("F3", CultureInfo.InvariantCulture)}; {controllerPosition.x.ToString("F3", CultureInfo.InvariantCulture)}; {controllerPosition.y.ToString("F3", CultureInfo.InvariantCulture)}; {controllerPosition.z.ToString("F3", CultureInfo.InvariantCulture)}; {targetName}; {targetPosition.x.ToString("F3", CultureInfo.InvariantCulture)}; {targetPosition.y.ToString("F3", CultureInfo.InvariantCulture)}; {targetPosition.z.ToString("F3", CultureInfo.InvariantCulture)}; {startObjectPosition.x.ToString("F3", CultureInfo.InvariantCulture)}; {startObjectPosition.y.ToString("F3", CultureInfo.InvariantCulture)}; {startObjectPosition.z.ToString("F3", CultureInfo.InvariantCulture)}; {firstInteractionControllerPosition.x.ToString("F3", CultureInfo.InvariantCulture)}; {firstInteractionControllerPosition.y.ToString("F3", CultureInfo.InvariantCulture)}; {firstInteractionControllerPosition.z.ToString("F3", CultureInfo.InvariantCulture)}");
+            entryNumber++;
         }
     }
 
@@ -214,9 +218,9 @@ public class SpawnManagerScript : MonoBehaviour
 
     private void UpdateTargetName(int targetIndex)
     {
-        if (targetIndex < selectedNameSet.Length)
+        if (targetIndex < nameSet.Length)
         {
-            targetNameText.text = selectedNameSet[targetIndex];
+            targetNameText.text = nameSet[targetIndex];
         }
     }
 
@@ -229,5 +233,46 @@ public class SpawnManagerScript : MonoBehaviour
     {
         Gizmos.color = new Color(1, 1, 1, 0.5f);
         Gizmos.DrawWireCube(boxCenter, boxSize);
+
+        // Calculate the step size for each grid cell in each dimension
+        float stepX = boxSize.x / 3;
+        float stepY = boxSize.y / 3;
+        float stepZ = boxSize.z / 3;
+
+        // Starting corner of the grid
+        Vector3 gridStart = boxCenter - boxSize / 2;
+
+        // Draw lines along the x-axis
+        for (int x = 0; x <= 3; x++)
+        {
+            for (int y = 0; y <= 3; y++)
+            {
+                Vector3 start = gridStart + new Vector3(x * stepX, y * stepY, 0);
+                Vector3 end = start + new Vector3(0, 0, boxSize.z);
+                Gizmos.DrawLine(start, end);
+            }
+        }
+
+        // Draw lines along the y-axis
+        for (int y = 0; y <= 3; y++)
+        {
+            for (int z = 0; z <= 3; z++)
+            {
+                Vector3 start = gridStart + new Vector3(0, y * stepY, z * stepZ);
+                Vector3 end = start + new Vector3(boxSize.x, 0, 0);
+                Gizmos.DrawLine(start, end);
+            }
+        }
+
+        // Draw lines along the z-axis
+        for (int z = 0; z <= 3; z++)
+        {
+            for (int x = 0; x <= 3; x++)
+            {
+                Vector3 start = gridStart + new Vector3(x * stepX, 0, z * stepZ);
+                Vector3 end = start + new Vector3(0, boxSize.y, 0);
+                Gizmos.DrawLine(start, end);
+            }
+        }
     }
 }
