@@ -1039,13 +1039,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   spawnablePrefabs:
-  - prefab: {fileID: 8125993065099215665, guid: 7f4d2104a228ac94ca6adde67f485cda, type: 3}
+  - prefab: {fileID: 8125993065099215665, guid: 79bac6820095fb04a83fd282a6e558ec, type: 3}
     name: Ant
-  - prefab: {fileID: 8125993065099215665, guid: 1f5e2a25cb961e14d8b1ea63638dc36e, type: 3}
+  - prefab: {fileID: 8125993065099215665, guid: 6698a15efeb41024cb1077a5766b63ce, type: 3}
     name: Bee
-  - prefab: {fileID: 8125993065099215665, guid: a69561cc76863ce41a62ca72e6dfda98, type: 3}
+  - prefab: {fileID: 8125993065099215665, guid: cd29098dbfe115347b9f8b475bd7129e, type: 3}
     name: Cat
-  - prefab: {fileID: 8125993065099215665, guid: 9444cd598e13e934a82743fcb067d414, type: 3}
+  - prefab: {fileID: 8125993065099215665, guid: 2adff1a3e80a9e44aad1304675f05a97, type: 3}
     name: Dog
   startObjectPrefab: {fileID: 8125993065099215665, guid: 23a0df6d41560ef4fbea68357b5f97f6, type: 3}
   startObjectPosition: {x: 0.5, y: 1.5, z: 0.5}
