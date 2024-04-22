@@ -38,6 +38,7 @@ public class SpawnManagerScript : MonoBehaviour
     private GameObject startObjectInstance;
     private int entryNumber = 1;
     private Vector3 firstClickControllerPosition;
+    private Dictionary<string, Vector3> subBoxIndices = new Dictionary<string, Vector3>();
 
     void Start()
     {
@@ -138,16 +139,26 @@ public class SpawnManagerScript : MonoBehaviour
         string filename = $"Participant_{participant}_{sceneName}_{date}_log.csv";
         string filePath = Path.Combine(Application.persistentDataPath, filename);
         bool fileExists = File.Exists(filePath);
+        Vector3 subBoxIndex = subBoxIndices[targetName];
 
         using (StreamWriter writer = new StreamWriter(filePath, true))
         {
             if (!fileExists || new FileInfo(filePath).Length == 0)
             {
-                writer.WriteLine("Entry Number, Participant, Block, SceneIndex, SceneName, Timestamp, ElapsedTime(s), ControllerX, ControllerY, ControllerZ, TargetName, TargetX, TargetY, TargetZ, StartObjectX, StartObjectY, StartObjectZ, FirstInteractionControllerX, FirstInteractionControllerY, FirstInteractionControllerZ");
+                writer.WriteLine("Entry Number, Participant, Block, SceneIndex, SceneName, Timestamp, ElapsedTime(s), ControllerX, ControllerY, ControllerZ, TargetName, TargetX, TargetY, TargetZ, StartObjectX, StartObjectY, StartObjectZ, FirstInteractionControllerX, FirstInteractionControllerY, FirstInteractionControllerZ, SubBoxX, SubBoxY, SubBoxZ");
             }
-            writer.WriteLine($"{entryNumber}; {participant}; {currentCycle}; {sceneIndex}; {sceneName}; {System.DateTime.Now:yyyy-MM-dd HH:mm:ss}; {time.ToString("F3", CultureInfo.InvariantCulture)}; {controllerPosition.x.ToString("F3", CultureInfo.InvariantCulture)}; {controllerPosition.y.ToString("F3", CultureInfo.InvariantCulture)}; {controllerPosition.z.ToString("F3", CultureInfo.InvariantCulture)}; {targetName}; {targetPosition.x.ToString("F3", CultureInfo.InvariantCulture)}; {targetPosition.y.ToString("F3", CultureInfo.InvariantCulture)}; {targetPosition.z.ToString("F3", CultureInfo.InvariantCulture)}; {startObjectPosition.x.ToString("F3", CultureInfo.InvariantCulture)}; {startObjectPosition.y.ToString("F3", CultureInfo.InvariantCulture)}; {startObjectPosition.z.ToString("F3", CultureInfo.InvariantCulture)}; {firstInteractionControllerPosition.x.ToString("F3", CultureInfo.InvariantCulture)}; {firstInteractionControllerPosition.y.ToString("F3", CultureInfo.InvariantCulture)}; {firstInteractionControllerPosition.z.ToString("F3", CultureInfo.InvariantCulture)}");
+            writer.WriteLine($"{entryNumber}; {participant}; {currentCycle}; {sceneIndex}; {sceneName}; {System.DateTime.Now:yyyy-MM-dd HH:mm:ss}; {time.ToString("F3", CultureInfo.InvariantCulture)}; {controllerPosition.x.ToString("F3", CultureInfo.InvariantCulture)}; {controllerPosition.y.ToString("F3", CultureInfo.InvariantCulture)}; {controllerPosition.z.ToString("F3", CultureInfo.InvariantCulture)}; {targetName}; {targetPosition.x.ToString("F3", CultureInfo.InvariantCulture)}; {targetPosition.y.ToString("F3", CultureInfo.InvariantCulture)}; {targetPosition.z.ToString("F3", CultureInfo.InvariantCulture)}; {startObjectPosition.x.ToString("F3", CultureInfo.InvariantCulture)}; {startObjectPosition.y.ToString("F3", CultureInfo.InvariantCulture)}; {startObjectPosition.z.ToString("F3", CultureInfo.InvariantCulture)}; {firstInteractionControllerPosition.x.ToString("F3", CultureInfo.InvariantCulture)}; {firstInteractionControllerPosition.y.ToString("F3", CultureInfo.InvariantCulture)}; {firstInteractionControllerPosition.z.ToString("F3", CultureInfo.InvariantCulture)}; {subBoxIndex.x}; {subBoxIndex.y}; {subBoxIndex.z}");
             entryNumber++;
         }
+    }
+
+    private Vector3 CalculateSubBoxIndex(Vector3 location)
+    {
+        Vector3 relativePosition = location - (boxCenter - boxSize / 2);
+        int xIndex = Mathf.FloorToInt(relativePosition.x / (boxSize.x / 3));
+        int yIndex = Mathf.FloorToInt(relativePosition.y / (boxSize.y / 3));
+        int zIndex = Mathf.FloorToInt(relativePosition.z / (boxSize.z / 3));
+        return new Vector3(xIndex, yIndex, zIndex);
     }
 
     private Vector3 GetRightControllerPosition()
@@ -167,6 +178,10 @@ public class SpawnManagerScript : MonoBehaviour
             {
                 GameObject instantiatedPrefab = Instantiate(prefab.prefab, locations[i], Quaternion.identity);
                 instantiatedObjects.Add(prefab.name, instantiatedPrefab);
+
+                // Calculate subbox index here (example for storing purposes)
+                Vector3 subBoxIndex = CalculateSubBoxIndex(locations[i]);
+                subBoxIndices.Add(prefab.name, subBoxIndex);
             }
         }
     }
