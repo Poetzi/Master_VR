@@ -27,6 +27,9 @@ public class SpawnManagerScript : MonoBehaviour
     [SerializeField] private int maxCycles = 1;
     [SerializeField] private SceneTransitionManager sceneTransitionManager;
     [SerializeField] private int participant;
+    [SerializeField] private bool automaticBoxCenter;
+    [SerializeField] private bool showGizmosInVR = false;
+
 
     [SerializeField] private string[] nameSet; // Names set through the Unity Inspector
     private Dictionary<string, GameObject> instantiatedObjects = new Dictionary<string, GameObject>();
@@ -39,14 +42,13 @@ public class SpawnManagerScript : MonoBehaviour
     private int entryNumber = 1;
     private Vector3 firstClickControllerPosition;
     private Dictionary<string, Vector3> subBoxIndices = new Dictionary<string, Vector3>();
+    private bool isInitialized = false;
+    private GameObject gizmoContainer;
+    private Renderer startObjectRenderer; // Renderer for the start object
 
     void Start()
     {
-        if (!TryGenerateObjects())
-        {
-            Debug.LogError("Failed to generate enough unique locations. Retrying...");
-            Start();
-        }
+        
     }
 
     private bool TryGenerateObjects()
@@ -75,7 +77,24 @@ public class SpawnManagerScript : MonoBehaviour
             interactable.selectEntered.AddListener(StartInteraction);
             interactable.selectExited.AddListener(EndInteraction);
         }
+
+        // Get the Renderer component of the instantiated start object
+        startObjectRenderer = startObject.GetComponent<Renderer>();
+        Debug.Log(startObjectRenderer);
+        // Initialize the color to blue at instantiation
+        UpdateStartObjectColor();
+
         return startObject;
+    }
+
+    private void UpdateStartObjectColor()
+    {
+        if (startObjectRenderer != null)
+        {
+            Debug.Log("Renderer is true");
+            Debug.Log(startObjectRenderer.material.color);
+            startObjectRenderer.material.SetColor("_BaseColor", timerRunning ? Color.red : Color.blue);
+        }
     }
 
     private void StartInteraction(SelectEnterEventArgs args)
@@ -96,18 +115,42 @@ public class SpawnManagerScript : MonoBehaviour
         Debug.Log("Timer Starts");
         startTime = Time.time;
         timerRunning = true;
+        UpdateStartObjectColor(); // Update color when the timer starts
     }
 
     void Update()
     {
+        if (!isInitialized && TryGetPrimaryButton(out bool primaryButtonPressed) && primaryButtonPressed)
+        {
+            if(automaticBoxCenter) { 
+                boxCenter = GetRightControllerPosition();
+            }
+
+            if (showGizmosInVR)
+                CreateGizmoLines();
+
+            InitializeEnvironment();
+            isInitialized = true;
+        }
+
         if (timerRunning && buttonReleased && TryGetPrimaryButton(out bool primaryButtonValue) && primaryButtonValue)
-            StopTimer();
+         StopTimer(); 
+    }
+
+    private void InitializeEnvironment()
+    {
+        if (!TryGenerateObjects())
+        {
+            Debug.LogError("Failed to generate enough unique locations. Retrying...");
+            InitializeEnvironment();
+        }
     }
 
     private void StopTimer()
     {
         Debug.Log("Timer Ends");
         timerRunning = false;
+        UpdateStartObjectColor(); // Update color when the timer stops
         buttonReleased = false;
         float elapsedTime = Time.time - startTime;
         string targetName = nameSet[currentTargetIndex];
@@ -145,9 +188,9 @@ public class SpawnManagerScript : MonoBehaviour
         {
             if (!fileExists || new FileInfo(filePath).Length == 0)
             {
-                writer.WriteLine("Entry Number, Participant, Block, SceneIndex, SceneName, Timestamp, ElapsedTime(s), ControllerX, ControllerY, ControllerZ, TargetName, TargetX, TargetY, TargetZ, StartObjectX, StartObjectY, StartObjectZ, FirstInteractionControllerX, FirstInteractionControllerY, FirstInteractionControllerZ, SubBoxX, SubBoxY, SubBoxZ");
+                writer.WriteLine("Entry Number, Participant, Block, SceneIndex, SceneName, Timestamp, ElapsedTime(s), ControllerX, ControllerY, ControllerZ, TargetName, TargetX, TargetY, TargetZ, StartObjectX, StartObjectY, StartObjectZ, FirstInteractionControllerX, FirstInteractionControllerY, FirstInteractionControllerZ, BoxCenterX, BoxCenterY, BoxCenterZ, SubBoxX, SubBoxY, SubBoxZ");
             }
-            writer.WriteLine($"{entryNumber}; {participant}; {currentCycle}; {sceneIndex}; {sceneName}; {System.DateTime.Now:yyyy-MM-dd HH:mm:ss}; {time.ToString("F3", CultureInfo.InvariantCulture)}; {controllerPosition.x.ToString("F3", CultureInfo.InvariantCulture)}; {controllerPosition.y.ToString("F3", CultureInfo.InvariantCulture)}; {controllerPosition.z.ToString("F3", CultureInfo.InvariantCulture)}; {targetName}; {targetPosition.x.ToString("F3", CultureInfo.InvariantCulture)}; {targetPosition.y.ToString("F3", CultureInfo.InvariantCulture)}; {targetPosition.z.ToString("F3", CultureInfo.InvariantCulture)}; {startObjectPosition.x.ToString("F3", CultureInfo.InvariantCulture)}; {startObjectPosition.y.ToString("F3", CultureInfo.InvariantCulture)}; {startObjectPosition.z.ToString("F3", CultureInfo.InvariantCulture)}; {firstInteractionControllerPosition.x.ToString("F3", CultureInfo.InvariantCulture)}; {firstInteractionControllerPosition.y.ToString("F3", CultureInfo.InvariantCulture)}; {firstInteractionControllerPosition.z.ToString("F3", CultureInfo.InvariantCulture)}; {subBoxIndex.x}; {subBoxIndex.y}; {subBoxIndex.z}");
+            writer.WriteLine($"{entryNumber}; {participant}; {currentCycle}; {sceneIndex}; {sceneName}; {System.DateTime.Now:yyyy-MM-dd HH:mm:ss}; {time.ToString("F3", CultureInfo.InvariantCulture)}; {controllerPosition.x.ToString("F3", CultureInfo.InvariantCulture)}; {controllerPosition.y.ToString("F3", CultureInfo.InvariantCulture)}; {controllerPosition.z.ToString("F3", CultureInfo.InvariantCulture)}; {targetName}; {targetPosition.x.ToString("F3", CultureInfo.InvariantCulture)}; {targetPosition.y.ToString("F3", CultureInfo.InvariantCulture)}; {targetPosition.z.ToString("F3", CultureInfo.InvariantCulture)}; {startObjectPosition.x.ToString("F3", CultureInfo.InvariantCulture)}; {startObjectPosition.y.ToString("F3", CultureInfo.InvariantCulture)}; {startObjectPosition.z.ToString("F3", CultureInfo.InvariantCulture)}; {firstInteractionControllerPosition.x.ToString("F3", CultureInfo.InvariantCulture)}; {firstInteractionControllerPosition.y.ToString("F3", CultureInfo.InvariantCulture)}; {firstInteractionControllerPosition.z.ToString("F3", CultureInfo.InvariantCulture)}; {boxCenter.x.ToString("F3", CultureInfo.InvariantCulture)}; {boxCenter.y.ToString("F3", CultureInfo.InvariantCulture)}; {boxCenter.z.ToString("F3", CultureInfo.InvariantCulture)};  {subBoxIndex.x}; {subBoxIndex.y}; {subBoxIndex.z}");
             entryNumber++;
         }
     }
@@ -289,5 +332,52 @@ public class SpawnManagerScript : MonoBehaviour
                 Gizmos.DrawLine(start, end);
             }
         }
+    }
+
+    private void CreateGizmoLines()
+    {
+        gizmoContainer = new GameObject("GizmoContainer");
+
+        // Calculate steps for grid
+        float stepX = boxSize.x / 3;
+        float stepY = boxSize.y / 3;
+        float stepZ = boxSize.z / 3;
+
+        // Draw lines for the box grid
+        DrawGrid(stepX, stepY, stepZ);
+    }
+
+    private void DrawGrid(float stepX, float stepY, float stepZ)
+    {
+        Vector3 gridStart = boxCenter - boxSize / 2;
+        for (int i = 0; i <= 3; i++)
+        {
+            for (int j = 0; j <= 3; j++)
+            {
+                CreateLineRenderer(new Vector3(gridStart.x + i * stepX, gridStart.y + j * stepY, gridStart.z),
+                                   new Vector3(gridStart.x + i * stepX, gridStart.y + j * stepY, gridStart.z + boxSize.z));
+
+                CreateLineRenderer(new Vector3(gridStart.x, gridStart.y + i * stepY, gridStart.z + j * stepZ),
+                                   new Vector3(gridStart.x + boxSize.x, gridStart.y + i * stepY, gridStart.z + j * stepZ));
+
+                CreateLineRenderer(new Vector3(gridStart.x + i * stepX, gridStart.y, gridStart.z + j * stepZ),
+                                   new Vector3(gridStart.x + i * stepX, gridStart.y + boxSize.y, gridStart.z + j * stepZ));
+            }
+        }
+    }
+
+    private void CreateLineRenderer(Vector3 start, Vector3 end)
+    {
+        GameObject lineObj = new GameObject("Line");
+        lineObj.transform.parent = gizmoContainer.transform;
+
+        LineRenderer lr = lineObj.AddComponent<LineRenderer>();
+        lr.positionCount = 2;
+        lr.SetPositions(new Vector3[] { start, end });
+        lr.startWidth = 0.01f;
+        lr.endWidth = 0.01f;
+        lr.material = new Material(Shader.Find("Sprites/Default"));
+        lr.startColor = Color.white;
+        lr.endColor = Color.white;
     }
 }

@@ -1048,7 +1048,7 @@ MonoBehaviour:
   - prefab: {fileID: 8125993065099215665, guid: 2adff1a3e80a9e44aad1304675f05a97, type: 3}
     name: Dog
   startObjectPrefab: {fileID: 8125993065099215665, guid: 23a0df6d41560ef4fbea68357b5f97f6, type: 3}
-  startObjectPosition: {x: 0.5, y: 1.5, z: 0.5}
+  startObjectPosition: {x: 0.3, y: 1.2, z: 0}
   targetNameText: {fileID: 679954518}
   boxCenter: {x: 0, y: 2, z: 1}
   boxSize: {x: 0.91, y: 0.91, z: 0.46}
@@ -1056,6 +1056,8 @@ MonoBehaviour:
   maxCycles: 3
   sceneTransitionManager: {fileID: 488114475}
   participant: 1
+  automaticBoxCenter: 1
+  showGizmosInVR: 1
   nameSet:
   - Ant
   - Bee
@@ -3328,15 +3330,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: c6984c48aed9a154294088f4265d8478, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -1.149
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: c6984c48aed9a154294088f4265d8478, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 1
+      value: 1.5
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: c6984c48aed9a154294088f4265d8478, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 1.325
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: c6984c48aed9a154294088f4265d8478, type: 3}
       propertyPath: m_LocalRotation.w
@@ -20743,7 +20745,7 @@ Light:
   m_BounceIntensity: 1
   m_ColorTemperature: 6570
   m_UseColorTemperature: 0
-  m_BoundingSphereOverride: {x: 1e-45, y: 1e-45, z: 1e-45, w: 0}
+  m_BoundingSphereOverride: {x: 0, y: 0, z: 0, w: 8e-44}
   m_UseBoundingSphereOverride: 0
   m_UseViewFrustumForShadowCasterCull: 1
   m_ShadowRadius: 0
