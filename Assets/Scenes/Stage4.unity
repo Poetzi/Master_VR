@@ -1050,13 +1050,13 @@ MonoBehaviour:
   startObjectPrefab: {fileID: 8125993065099215665, guid: 23a0df6d41560ef4fbea68357b5f97f6, type: 3}
   startObjectPosition: {x: 0.3, y: 1.2, z: 0}
   targetNameText: {fileID: 679954518}
-  boxCenter: {x: 0, y: 2, z: 1}
+  boxCenter: {x: -0.009, y: 1.656, z: 0.83}
   boxSize: {x: 0.91, y: 0.91, z: 0.46}
   minDistance: 0.05
   maxCycles: 3
   sceneTransitionManager: {fileID: 488114475}
   participant: 1
-  automaticBoxCenter: 1
+  automaticBoxCenter: 0
   showGizmosInVR: 1
   nameSet:
   - Ant
@@ -20745,7 +20745,7 @@ Light:
   m_BounceIntensity: 1
   m_ColorTemperature: 6570
   m_UseColorTemperature: 0
-  m_BoundingSphereOverride: {x: 0, y: 0, z: 0, w: 8e-44}
+  m_BoundingSphereOverride: {x: 0, y: 0, z: 0, w: 8.397708e-27}
   m_UseBoundingSphereOverride: 0
   m_UseViewFrustumForShadowCasterCull: 1
   m_ShadowRadius: 0

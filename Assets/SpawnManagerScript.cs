@@ -29,6 +29,7 @@ public class SpawnManagerScript : MonoBehaviour
     [SerializeField] private int participant;
     [SerializeField] private bool automaticBoxCenter;
     [SerializeField] private bool showGizmosInVR = false;
+    [SerializeField] private List<Vector3> manualLocations;
 
 
     [SerializeField] private string[] nameSet; // Names set through the Unity Inspector
@@ -53,11 +54,26 @@ public class SpawnManagerScript : MonoBehaviour
 
     private bool TryGenerateObjects()
     {
-        List<Vector3> targetLocations = GenerateUniqueLocations(4, boxSize, minDistance);
-        if (targetLocations.Count < 4) return false;
+        int numberOfObjectsToSpawn = nameSet.Length;
+        List<Vector3> targetLocations;
 
-        ShuffleNameSet(); // Shuffle the name set before assigning
-        AssignNamesAndSpawnPrefabs(targetLocations, nameSet); // Directly use the shuffled nameSet
+        if (automaticBoxCenter)
+        {
+            targetLocations = GenerateUniqueLocations(numberOfObjectsToSpawn, boxSize, minDistance);
+        }
+        else
+        {
+            targetLocations = new List<Vector3>(manualLocations);
+        }
+
+        if (targetLocations.Count < numberOfObjectsToSpawn)
+        {
+            Debug.LogError("Not enough locations generated or provided.");
+            return false;
+        }
+
+        ShuffleNameSet();
+        AssignNamesAndSpawnPrefabs(targetLocations, nameSet);
         startObjectInstance = InstantiateStartObject();
         UpdateTargetName(currentTargetIndex);
         return true;
@@ -93,7 +109,7 @@ public class SpawnManagerScript : MonoBehaviour
         {
             Debug.Log("Renderer is true");
             Debug.Log(startObjectRenderer.material.color);
-            startObjectRenderer.material.SetColor("_BaseColor", timerRunning ? Color.red : Color.blue);
+           startObjectRenderer.material.SetColor("_BaseColor", timerRunning ? Color.red : Color.blue);
         }
     }
 
@@ -214,10 +230,11 @@ public class SpawnManagerScript : MonoBehaviour
     private void AssignNamesAndSpawnPrefabs(List<Vector3> locations, string[] nameSet)
     {
         instantiatedObjects.Clear();
-        for (int i = 0; i < locations.Count; i++)
+        // Iterate through all the names in the nameSet
+        for (int i = 0; i < nameSet.Length; i++)
         {
             SpawnablePrefab prefab = spawnablePrefabs.Find(p => p.name == nameSet[i]);
-            if (prefab != null)
+            if (prefab != null && i < locations.Count) // Check if the location exists for the object
             {
                 GameObject instantiatedPrefab = Instantiate(prefab.prefab, locations[i], Quaternion.identity);
                 instantiatedObjects.Add(prefab.name, instantiatedPrefab);
@@ -226,6 +243,10 @@ public class SpawnManagerScript : MonoBehaviour
                 Vector3 subBoxIndex = CalculateSubBoxIndex(locations[i]);
                 subBoxIndices.Add(prefab.name, subBoxIndex);
             }
+            else
+            {
+                Debug.LogError($"Prefab for {nameSet[i]} could not be found or there is no corresponding location.");
+            }
         }
     }
 
@@ -233,14 +254,22 @@ public class SpawnManagerScript : MonoBehaviour
     {
         List<Vector3> locations = new List<Vector3>();
         int maxAttempts = 10000;
-        while (locations.Count < count && maxAttempts-- > 0)
+        for (int i = 0; i < count && maxAttempts > 0; --maxAttempts)
         {
             Vector3 potentialLocation = GenerateRandomPoint(size);
             if (IsValidLocation(locations, potentialLocation, minDist))
             {
                 locations.Add(potentialLocation);
+                i++; // Increment only if a valid location is added
             }
         }
+
+        // Check if we have enough locations, if not, log an error
+        if (locations.Count < count)
+        {
+            Debug.LogError("Couldn't generate the required number of unique locations.");
+        }
+
         return locations;
     }
 
